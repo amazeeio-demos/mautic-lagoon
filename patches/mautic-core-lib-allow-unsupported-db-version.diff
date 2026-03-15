@@ -1,0 +1,43 @@
+From 047c08a3eccaaae4b01e59ca62d516ceb7ae1fae Mon Sep 17 00:00:00 2001
+From: Dan Lemon <daniel.lemon@amazee.io>
+Date: Sat, 11 Apr 2026 16:22:32 +0200
+Subject: x
+
+---
+ .../Update/PreUpdateChecks/CheckDatabaseDriverAndVersion.php  | 4 ++++
+ bundles/InstallBundle/Helper/SchemaHelper.php                 | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/bundles/CoreBundle/Helper/Update/PreUpdateChecks/CheckDatabaseDriverAndVersion.php b/bundles/CoreBundle/Helper/Update/PreUpdateChecks/CheckDatabaseDriverAndVersion.php
+index 07da41a5ab69..650f8fb6fe83 100644
+--- a/bundles/CoreBundle/Helper/Update/PreUpdateChecks/CheckDatabaseDriverAndVersion.php
++++ b/bundles/CoreBundle/Helper/Update/PreUpdateChecks/CheckDatabaseDriverAndVersion.php
+@@ -16,6 +16,10 @@ class CheckDatabaseDriverAndVersion extends AbstractPreUpdateCheck
+ 
+     public function runCheck(): PreUpdateCheckResult
+     {
++        if (filter_var((string) getenv('MAUTIC_ALLOW_UNSUPPORTED_DB_VERSION'), FILTER_VALIDATE_BOOLEAN)) {
++            return new PreUpdateCheckResult(true, $this);
++        }
++
+         $metadata   = $this->getUpdateCandidateMetadata();
+         $connection = $this->em->getConnection();
+ 
+diff --git a/bundles/InstallBundle/Helper/SchemaHelper.php b/bundles/InstallBundle/Helper/SchemaHelper.php
+index d38e2a9ffe65..953a32acc583 100644
+--- a/bundles/InstallBundle/Helper/SchemaHelper.php
++++ b/bundles/InstallBundle/Helper/SchemaHelper.php
+@@ -179,6 +179,10 @@ class SchemaHelper
+ 
+     public function validateDatabaseVersion(): void
+     {
++        if (filter_var((string) getenv('MAUTIC_ALLOW_UNSUPPORTED_DB_VERSION'), FILTER_VALIDATE_BOOLEAN)) {
++            return;
++        }
++
+         // Version strings are in the format 10.3.30-MariaDB-1:10.3.30+maria~focal-log
+         $version  = $this->db->executeQuery('SELECT VERSION()')->fetchOne();
+ 
+-- 
+2.53.0
+

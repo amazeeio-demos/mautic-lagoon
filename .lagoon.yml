@@ -1,0 +1,41 @@
+docker-compose-yaml: docker-compose.yml
+
+tasks:
+  post-rollout:
+    - run:
+        name: Provision Mautic and run post-rollout tasks
+        command: bash ./bin/mautic-post-rollout.sh
+        service: cli
+        shell: bash
+
+environments:
+  main:
+    cronjobs:
+      - name: Send broadcasts
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:broadcasts:send --limit=500
+        service: worker
+      - name: Send campaigns
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:campaigns:rebuild --batch-limit=100
+        service: worker
+      - name: Run segments
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:segment:update --batch-limit=900
+        service: worker
+      - name: Trigger campaigns
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:campaigns:trigger
+        service: worker
+      - name: Import Mautic
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:import --limit=500
+        service: worker
+      - name: Process webhooks
+        schedule: "*/3 * * * *"
+        command: php bin/console mautic:webhooks:process
+        service: worker
+      - name: Schedule reports
+        schedule: "*/4 * * * *"
+        command: php bin/console mautic:reports:scheduler
+        service: worker

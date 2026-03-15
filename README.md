@@ -1,0 +1,200 @@
+# Composer template for Mautic projects
+
+This project template provides a starter kit for managing your Mautic
+dependencies with [Composer](https://getcomposer.org/).
+
+## Usage
+
+First you need to install [Composer v2](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-osx).
+
+> Note: The instructions below refer to the [global composer installation](https://getcomposer.org/doc/00-intro.md#globally).
+You might need to replace `composer` with `php composer.phar` (or similar)
+for your setup.
+
+After that you can create the project:
+
+```
+composer create-project mautic/recommended-project:^7.0 some-dir --no-interaction
+```
+
+With `composer require ...` you can download new dependencies to your installation.
+
+Example of installing a plugin:
+```
+cd some-dir
+composer require mautic/helloworld-bundle
+```
+
+The `composer create-project` command passes ownership of all files to the
+project that is created. You should create a new git repository, and commit
+all files not excluded by the .gitignore file.
+
+## What does the template do?
+
+When installing the given `composer.json` some tasks are taken care of:
+
+* Mautic will be installed in the `docroot`-directory.
+* Autoloader is implemented to use the generated composer autoloader in `vendor/autoload.php`,
+  instead of the one provided by Mautic (`docroot/vendor/autoload.php`).
+* Plugins (packages of type `mautic-plugin`) will be placed in `docroot/plugins/`
+* Themes (packages of type `mautic-theme`) will be placed in `docroot/themes/`
+* Creates `docroot/media`-directory.
+* Creates environment variables based on your .env file. See [.env.example](.env.example).
+
+## Updating Mautic Core
+
+This project will attempt to keep all of your Mautic Core files up-to-date; the
+project [mautic/core-composer-scaffold](https://github.com/mautic/core-composer-scaffold)
+is used to ensure that your scaffold files are updated every time mautic/core is
+updated. If you customize any of the "scaffolding" files (commonly .htaccess),
+you may need to merge conflicts if any of your modified files are updated in a
+new release of Mautic core.
+
+Follow the steps below to update your core files.
+
+1. Run `composer update mautic/core --with-dependencies` to update Mautic Core and its dependencies.
+2. Run `git diff` to determine if any of the scaffolding files have changed.
+   Review the files for any changes and restore any customizations to
+  `.htaccess` or others.
+1. Commit everything all together in a single commit, so `docroot` will remain in
+   sync with the `core` when checking out branches or running `git bisect`.
+1. In the event that there are non-trivial conflicts in step 2, you may wish
+   to perform these steps on a branch, and use `git merge` to combine the
+   updated core files with your customized files. This facilitates the use
+   of a [three-way merge tool such as kdiff3](http://www.gitshah.com/2010/12/how-to-setup-kdiff-as-diff-tool-for-git.html). This setup is not necessary if your changes are simple;
+   keeping all of your modifications at the beginning or end of the file is a
+   good strategy to keep merges easy.
+
+## FAQ
+
+### Should I commit the contributed plugins I download?
+
+Composer recommends **no**. They provide [argumentation against but also
+workrounds if a project decides to do it anyway](https://getcomposer.org/doc/faqs/should-i-commit-the-dependencies-in-my-vendor-directory.md).
+
+### Should I commit the scaffolding files?
+
+The [Mautic Composer Scaffold](https://github.com/mautic/core-composer-scaffold) plugin can download the scaffold files (like
+index.php, .htaccess, …) to the docroot/ directory of your project. If you have not customized those files you could choose
+to not check them into your version control system (e.g. git). If that is the case for your project it might be
+convenient to automatically run the mautic-scaffold plugin after every install or update of your project. You can
+achieve that by registering `@composer mautic:scaffold` as post-install and post-update command in your composer.json:
+
+```json
+"scripts": {
+    "post-install-cmd": [
+        "@composer mautic:scaffold",
+        "..."
+    ],
+    "post-update-cmd": [
+        "@composer mautic:scaffold",
+        "..."
+    ]
+},
+```
+### How can I apply patches to downloaded plugins?
+
+If you need to apply patches (depending on the project being modified, a pull
+request is often a better solution), you can do so with the
+[composer-patches](https://github.com/cweagans/composer-patches) plugin.
+
+To add a patch to Mautic plugin foobar insert the patches section in the extra
+section of composer.json:
+```json
+"extra": {
+    "patches": {
+        "mautic/foobar": {
+            "Patch description": "URL or local path to patch"
+        }
+    }
+}
+```
+
+### How do I specify a PHP version?
+
+This project supports PHP 8.2 as the minimum version (see [Mautic requirements](https://mautic.org/mautic-requirements/)). However, running a `composer update` may upgrade some package that will require a higher PHP version.
+
+To prevent this, you can specify the PHP version in the `config` section of `composer.json` by adding the following code:
+```json
+"config": {
+    "sort-packages": true,
+    "platform": {
+        "php": "8.2"
+    }
+},
+```
+
+Alternatively, you can run the following command:
+```bash
+composer config platform.php 8.2
+```
+
+## Automated install
+
+This repository can provision Mautic during Lagoon `post-rollout` by running `bin/mautic-post-rollout.sh`.
+
+The script behaves as follows:
+
+* If `config/local.php` already exists, it skips install and only runs migrations plus asset generation.
+* If `config/local.php` does not exist and the required env vars are present, it runs `php bin/console mautic:install` non-interactively.
+* If `config/local.php` does not exist and the required env vars are missing, it skips install and leaves the site uninstalled.
+
+Supported env vars:
+
+* `MAUTIC_SITE_URL` (falls back to `LAGOON_ROUTE`)
+* `MARIADB_HOST` (default `mariadb`)
+* `MARIADB_PORT` (default `3306`)
+* `MARIADB_DATABASE` (default `mautic`)
+* `MARIADB_USERNAME` (default `mautic`)
+* `MARIADB_PASSWORD` (default `mautic`)
+* `MARIADB_READREPLICA_HOSTS` (comma-separated; first host is used for `db_host_ro` when present)
+* `MAUTIC_ADMIN_FIRSTNAME`
+* `MAUTIC_ADMIN_LASTNAME`
+* `MAUTIC_ADMIN_USERNAME`
+* `MAUTIC_ADMIN_EMAIL`
+* `MAUTIC_ADMIN_PASSWORD`
+* `MAUTIC_DB_SERVER_VERSION` (passed into runtime config as `db_server_version` when set)
+* `MAUTIC_ALLOW_UNSUPPORTED_DB_VERSION=1` to bypass Mautic's installer database minimum-version check when provisioning against an older MySQL or MariaDB version
+
+Example:
+
+```bash
+MAUTIC_SITE_URL=https://mautic.example.com
+MAUTIC_ADMIN_FIRSTNAME=Admin
+MAUTIC_ADMIN_LASTNAME=User
+MAUTIC_ADMIN_USERNAME=admin
+MAUTIC_ADMIN_EMAIL=admin@example.com
+MAUTIC_ADMIN_PASSWORD=change-me
+```
+
+`config/local.php` is generated by Mautic during install and should remain environment-specific.
+
+`MAUTIC_DB_SERVER_VERSION` is not enough to bypass the installer requirement check. Mautic uses it for Doctrine platform detection, but the installer minimum-version validation reads the actual database version from `SELECT VERSION()`. Use `MAUTIC_ALLOW_UNSUPPORTED_DB_VERSION=1` only if you accept the compatibility risk.
+
+
+### How do I use another folder than docroot as webroot?
+
+By default the composer.json file is configures to put all Mautic core, plugin and theme files in the `docroot` folder.  
+It is possible to change this folder to your own needs.
+
+In following examples, we will change `docroot` into `public`.
+
+#### New installations
+
+* Run the `create-project` command without installing  
+  ```bash
+  composer create-project mautic/recommended-project:^7.0 some-dir --no-interaction --no-install
+  ```
+* Do a find and replace in the `composer.json` file to change `docroot/` into `public/`.
+* Review the changes in the `composer.json` file to ensure there are no unintentional replacements.
+* Run `composer install` to install all dependencies in the correct location.
+
+#### Existing installations
+
+* move the `docroot/` to `public/`
+  ```bash
+  mv docroot public
+  ```
+* Do a find and replace in the `composer.json` file to change `docroot/` into `public/`.
+* review the changes in the `composer.json` file to ensure there are no unintentional replacements.
+* run `composer update --lock` to ensure the autoloader is aware of the changed folder.
