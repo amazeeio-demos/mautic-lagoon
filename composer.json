@@ -119,6 +119,7 @@
     "generate-assets": "@php bin/console mautic:assets:generate"
   },
   "extra": {
+    "public-dir": "docroot",
     "mautic-scaffold": {
       "locations": {
         "web-root": "docroot/"
