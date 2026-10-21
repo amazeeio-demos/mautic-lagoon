@@ -1,6 +1,6 @@
 #############
 ### CLI
-FROM uselagoon/php-8.4-cli-drupal:latest AS cli
+FROM uselagoon/php-8.5-cli-drupal:latest AS cli
 
 RUN apk add --no-cache \
         autoconf \
@@ -38,7 +38,7 @@ ENV WEBROOT=docroot
 
 #############
 ### PHP
-FROM uselagoon/php-8.4-fpm:latest AS php
+FROM uselagoon/php-8.5-fpm:latest AS php
 
 RUN apk add --no-cache \
         autoconf \
